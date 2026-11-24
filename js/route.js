@@ -91,25 +91,25 @@ export function findRoute(model, from, to, mode = 'walk') {
   const seq = [];
   for (let v = T; v !== -1; v = prev[v]) seq.push(v);
   seq.reverse();
-  const pts = [], roadOf = [];
-  const push = (x, z, r) => {
+  const pts = [], roadOf = [], nodeOf = [];
+  const push = (x, z, r, v = -1) => {
     const n = pts.length;
     if (n && Math.abs(pts[n - 2] - x) < 0.01 && Math.abs(pts[n - 1] - z) < 0.01) return;
-    pts.push(x, z); roadOf.push(r);
+    pts.push(x, z); roadOf.push(r); nodeOf.push(v);
   };
   if (A.wall) push(A.wall.x, A.wall.z, -2);
   for (const v of seq) {
     const r = prevRoad[v];
     if (v === S) push(A.x, A.z, roadA);
     else if (v === T) push(B.x, B.z, r);
-    else push(X[v], Z[v], r);
+    else push(X[v], Z[v], r, v);
   }
   if (B.wall) push(B.wall.x, B.wall.z, -2);
   let dist = 0;
   const cum = [0];
   for (let i = 2; i < pts.length; i += 2) { dist += Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]); cum.push(dist); }
   const route = { pts, cum, dist, mode, time: dist / SPEED[mode], from: A, to: B, fromName: from.name || A.label, toName: to.name || B.label };
-  route.steps = steps(model, route, roadOf);
+  route.steps = steps(model, route, nodeOf);
   return route;
 }
 
@@ -119,7 +119,7 @@ const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-we
 function landmark(model, x, z, skip) {
   let best = null, bd = 75;
   for (const b of model.bGrid.queryBox([x - 75, z - 75, x + 75, z + 75])) {
-    if (!b.name || b.name === skip) continue;
+    if (!b.name || skip.includes(b.name) || (b.place && skip.includes(b.place.name))) continue;
     const d = Math.hypot(b.cx - x, b.cz - z) - Math.sqrt(b.area) / 2;
     if (d < bd) { bd = d; best = b; }
   }
@@ -127,7 +127,7 @@ function landmark(model, x, z, skip) {
 }
 
 // bearing over a window of ~w metres to ignore tiny kinks
-function dirAt(route, i, sign, w = 9) {
+function dirAt(route, i, sign, w = 14) {
   const p = route.pts, n = p.length / 2;
   let j = i;
   while (j + sign >= 0 && j + sign < n && Math.abs(route.cum[j + sign] - route.cum[i]) < w) j += sign;
@@ -135,25 +135,28 @@ function dirAt(route, i, sign, w = 9) {
   return sign > 0 ? bearing(p[2 * j] - p[2 * i], p[2 * j + 1] - p[2 * i + 1]) : bearing(p[2 * i] - p[2 * j], p[2 * i + 1] - p[2 * j + 1]);
 }
 
-function steps(model, route, roadOf) {
-  const p = route.pts, n = p.length / 2, out = [];
+// instructions only where there is a choice to make: junctions of the network
+function steps(model, route, nodeOf) {
+  const p = route.pts, n = p.length / 2, out = [], adj = model.nav.adj;
   if (n < 2) return out;
-  const b0 = dirAt(route, 0, 1);
+  const skip = [route.fromName, route.toName];
+  const b0 = dirAt(route, 0, 1, 25);
   out.push({ icon: 'start', i: 0, text: `Head ${COMPASS[Math.round(b0 / 45) % 8]}` + (route.fromName ? ` from ${route.fromName}` : '') });
-  let lastTurn = -1e9;
+  let last = 0;
   for (let i = 1; i < n - 1; i++) {
-    const segIn = route.cum[i] - route.cum[i - 1];
-    if (segIn < 0.5 && roadOf[i] === roadOf[i + 1]) continue;
-    const a = dirAt(route, i, -1), b = dirAt(route, i, 1);
-    let turn = ((b - a + 540) % 360) - 180;
-    if (Math.abs(turn) < 33) continue;
-    if (route.cum[i] - lastTurn < 10) continue;
+    const v = nodeOf[i];
+    const offLeg = (i === 1 && route.cum[1] > 20) || (i === n - 2 && route.dist - route.cum[n - 2] > 20);
+    if (!offLeg && (v < 0 || adj[v].length < 3)) continue;
+    if (route.cum[i] < 12 || route.dist - route.cum[i] < 12) continue;
+    const turn = ((dirAt(route, i, 1) - dirAt(route, i, -1) + 540) % 360) - 180;
+    if (Math.abs(turn) < 35) continue;
+    if (route.cum[i] - last < 12 && out.length > 1) out.pop();
     const side = turn > 0 ? 'right' : 'left';
-    const kind = Math.abs(turn) < 60 ? 'slight' : Math.abs(turn) < 140 ? 'turn' : 'sharp';
-    const lm = landmark(model, p[2 * i], p[2 * i + 1], route.toName);
+    const kind = Math.abs(turn) < 60 ? 'slight' : Math.abs(turn) < 145 ? 'turn' : 'sharp';
+    const lm = landmark(model, p[2 * i], p[2 * i + 1], skip);
     const verb = kind === 'slight' ? `Bear ${side}` : kind === 'sharp' ? `Sharp ${side}` : `Turn ${side}`;
     out.push({ icon: side + (kind === 'turn' ? '' : '-' + kind), i, text: verb + (lm ? ` near ${lm}` : '') });
-    lastTurn = route.cum[i];
+    last = route.cum[i];
   }
   out.push({ icon: 'arrive', i: n - 1, text: `Arrive at ${route.toName || 'destination'}` });
   for (let k = 0; k < out.length; k++) {

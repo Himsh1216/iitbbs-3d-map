@@ -442,7 +442,7 @@ export function buildWorld(model, opts = {}) {
   const noise = noiseTexture();
 
   // ground + campus fill
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#b9ab86', roughness: 1, map: noise }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#b3b298', roughness: 1, map: noise }));
   ground.material.map = noise.clone(); ground.material.map.repeat.set(1200, 1200); ground.material.map.needsUpdate = true;
   ground.receiveShadow = true; ground.userData.pick = 'ground';
   root.add(ground);
@@ -452,7 +452,7 @@ export function buildWorld(model, opts = {}) {
     if (a.kind === 'water') continue;
     const [col, y] = AREA[a.kind];
     const cc = C(a.kind === 'pitch' ? (PITCH[a.sport] || col) : col);
-    if (!model.inCampus(a.cx, a.cz)) cc.lerp(C('#b9ab86'), 0.35);
+    if (!model.inCampus(a.cx, a.cz)) cc.lerp(C('#b3b298'), 0.35);
     flatPoly(A, a.rings, y + Math.min(0.05, 300 / (a.area + 3000)), cc);
   }
   const areas = new THREE.Mesh(A.geometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, map: noise }));

@@ -131,6 +131,8 @@ const COL = {
   daySky: new THREE.Color('#cfe4f5'), nightSky: new THREE.Color('#22324f'), dayGround: new THREE.Color('#8f7a5e'), nightGround: new THREE.Color('#141821'),
   dayTop: new THREE.Color('#3f7fd0'), nightTop: new THREE.Color('#03060f'), dayHor: new THREE.Color('#d7e7f3'), nightHor: new THREE.Color('#0f1a30'), duskHor: new THREE.Color('#f2a66e'),
 };
+const darkPref = matchMedia('(prefers-color-scheme: dark)');
+darkPref.addEventListener?.('change', () => updateSun());
 const fmtTime = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
 
 function updateSun() {
@@ -141,8 +143,8 @@ function updateSun() {
   const day = smooth(-7, 7, el), low = 1 - smooth(2, 26, el), night = 1 - smooth(-5, 3, el);
   sun.intensity = 2.9 * smooth(-1.5, 8, el);
   sun.color.copy(COL.white).lerp(COL.gold, low * 0.9);
-  moon.intensity = 0.7 * night;
-  hemi.intensity = 0.55 + 0.7 * day;
+  moon.intensity = 0.8 * night;
+  hemi.intensity = 0.65 + 0.6 * day;
   hemi.color.copy(COL.nightSky).lerp(COL.daySky, day);
   hemi.groundColor.copy(COL.nightGround).lerp(COL.dayGround, day);
   const u = world.sky.material.uniforms;
@@ -155,7 +157,7 @@ function updateSun() {
   world.lamps.glow.material.opacity = night; world.lamps.pool.material.opacity = night * 0.5;
   world.stars.material.opacity = smooth(0.5, 1, night) * 0.9;
   renderer.toneMappingExposure = 0.9 + 0.12 * day;
-  document.body.classList.toggle('night', night > 0.55);
+  document.body.classList.toggle('dark', night > 0.55 || darkPref.matches);
   $('#timeText').textContent = fmtTime.format(t) + (S.timeShift ? '' : ' IST');
   $('#timeIcon').textContent = night > 0.55 ? '🌙' : low > 0.55 ? '🌅' : '☀️';
   $('#timePill').classList.toggle('shifted', !!S.timeShift);
@@ -211,7 +213,7 @@ function framed(x, z, dist) {
 function fitBounds(pts, pad = 1.25) {
   let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
   for (let i = 0; i < pts.length; i += 2) { x0 = Math.min(x0, pts[i]); x1 = Math.max(x1, pts[i]); z0 = Math.min(z0, pts[i + 1]); z1 = Math.max(z1, pts[i + 1]); }
-  const span = Math.max(x1 - x0, z1 - z0, 120) * (innerWidth < 680 ? 1.5 : 1.15);
+  const span = Math.max(x1 - x0, z1 - z0, 120) * (innerWidth < 680 ? 1.5 : 1.45);
   const dist = Math.min(4200, span * pad / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)))) + 60;
   flyTo({ ...framed((x0 + x1) / 2, (z0 + z1) / 2, dist), dist });
 }
@@ -426,7 +428,7 @@ function showRoute(r) {
   const a = r.pts, n = a.length;
   S.endLabels = [
     labels.add({ text: 'A', tier: 0, x: a[0], y: 2, z: a[1], cls: 'endpt', icon: '' }),
-    labels.add({ text: r.toName || 'B', tier: 0, x: a[n - 2], y: 2, z: a[n - 1], cls: 'endpt b', icon: '' }),
+    labels.add({ text: (S.dir.to && (S.dir.to.label || S.dir.to.short)) || r.toName || 'B', tier: 0, x: a[n - 2], y: 2, z: a[n - 1], cls: 'endpt b', icon: '' }),
   ];
   for (const l of S.endLabels) l.el.querySelector('i').remove();
   S.dirty = true;
