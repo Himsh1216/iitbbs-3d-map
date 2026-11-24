@@ -14,7 +14,7 @@ Schools, halls of residence, lecture halls, sports fields, quarters and shops ar
 - **Find a professor's office**: type a professor's name to see their school, room number and building, taken from the institute's faculty directory.
 - **Directions from anywhere to anywhere**: pick a From and a To (or use your location) for the walking or cycling route, with distance, time and turn-by-turn steps that name nearby buildings.
 - **Walk the route**: *Start* follows you live with GPS and re-routes if you stray; *Preview walk* plays the route first.
-- **Useful spots**: drinking water, toilets, ATMs, food, pharmacy, photocopy, laundry, salon, post office, cycle parking, EV charging, lecture halls, sports and parking, with the nearest listed first.
+- **Useful spots**: drinking water, toilets, ATMs, food, pharmacy, photocopy, laundry, salon, post office, cycle parking, EV charging, lecture halls, sports and parking, nearest first. Only what is mapped shows up, and each empty category links straight to the OpenStreetMap editor so anyone can add it.
 - **Walk mode**: drop to street level and stroll around campus.
 - **Day and night**: the sun, shadows and seasons follow the real time in Bhubaneswar; at night windows and street lamps light up. Drag the time slider to see any hour.
 - **2D map and tilt lock**: switch to a flat map, or lock the tilt to zoom without tipping; double-tap to zoom.
