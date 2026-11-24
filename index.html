@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>IIT Bhubaneswar in 3D</title>
+<meta name="description" content="An interactive 3D map of the IIT Bhubaneswar campus at Argul. Find any school, hostel, lecture hall or professor's office and get walking or cycling directions.">
+<meta name="theme-color" content="#c8553d">
+<meta property="og:type" content="website">
+<meta property="og:title" content="IIT Bhubaneswar in 3D">
+<meta property="og:description" content="Explore the Argul campus in 3D: search schools, hostels and professors, and get walking directions.">
+<meta property="og:url" content="https://himsh1216.github.io/iitbbs-3d-map/">
+<meta property="og:image" content="https://himsh1216.github.io/iitbbs-3d-map/preview.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23c8553d'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M16 7v18M7 16h18M9.6 9.6l12.8 12.8M22.4 9.6 9.6 22.4' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="c" tabindex="0" aria-label="3D map of IIT Bhubaneswar"></canvas>
+<div id="labels" aria-hidden="true"></div>
+
+<header id="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="var(--accent)"/><circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-width="2"/><path d="M16 7v18M7 16h18M9.6 9.6l12.8 12.8M22.4 9.6 9.6 22.4" stroke="#fff" stroke-width="1.6"/></svg>
+    <div><b>IIT Bhubaneswar</b><span>in 3D · Argul campus</span></div>
+  </div>
+  <div class="searchbox">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Search schools, hostels, professors…" autocomplete="off" spellcheck="false" aria-label="Search the campus">
+    <kbd>/</kbd>
+    <button id="btnDir" class="icon" title="Directions" aria-label="Directions"><svg viewBox="0 0 24 24"><path d="M12 2 22 12 12 22 2 12z"/><path d="M9 14v-3h5m-2-2 2 2-2 2"/></svg></button>
+  </div>
+  <div id="results" role="listbox" hidden></div>
+  <nav id="chips" aria-label="Filter buildings"></nav>
+</header>
+
+<aside id="controls" aria-label="Map controls">
+  <button id="compass" class="ctl" title="Point north" aria-label="Point north"><svg viewBox="0 0 24 24"><path class="n" d="M12 3 15 12H9z"/><path class="s" d="M12 21 9 12h6z"/></svg></button>
+  <button id="btn2d" class="ctl txt" title="Flat 2D map" aria-pressed="false">2D</button>
+  <button id="btnLock" class="ctl" title="Lock the tilt angle" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  <button id="btnLocate" class="ctl" title="Show my location"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="7.5"/></svg></button>
+  <button id="btnWalk" class="ctl" title="Walk around at street level"><svg viewBox="0 0 24 24"><circle cx="13" cy="4" r="2"/><path d="m9 21 2.5-6.5L14 17v4m-2.5-6.5L12 9l-3 2v3m3-5 3 3h3"/></svg></button>
+  <button id="btnSpots" class="ctl" title="Useful spots"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></button>
+  <button id="btnMenu" class="ctl" title="Settings and about"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+</aside>
+
+<button id="timePill" title="Sun and time of day"><span id="timeIcon">☀️</span><span id="timeText">--:--</span></button>
+<div id="timePanel" class="panel small" hidden>
+  <div class="row"><b>Time of day</b><button id="timeLive" class="link">Back to live</button></div>
+  <input id="timeRange" type="range" min="-720" max="720" step="10" value="0" aria-label="Shift the time of day">
+  <p class="hint">Sun, shadows and night lights follow the real time in Bhubaneswar. Drag to see another hour.</p>
+</div>
+
+<section id="card" class="panel sheet" hidden aria-live="polite"></section>
+
+<section id="dirPanel" class="panel sheet" hidden>
+  <div class="row head"><b>Directions</b><button class="x" data-close="dirPanel" aria-label="Close">×</button></div>
+  <div class="ends">
+    <div class="end"><span class="dot a">A</span><input id="fromIn" placeholder="From: search or use your location" autocomplete="off"></div>
+    <div class="end"><span class="dot b">B</span><input id="toIn" placeholder="To: search a place or professor" autocomplete="off"></div>
+    <button id="swap" class="icon" title="Swap" aria-label="Swap start and end"><svg viewBox="0 0 24 24"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3"/></svg></button>
+  </div>
+  <div id="endResults" role="listbox" hidden></div>
+  <div class="modes" role="radiogroup">
+    <button data-mode="walk" class="on" role="radio" aria-checked="true">🚶 Walk</button>
+    <button data-mode="cycle" role="radio" aria-checked="false">🚲 Cycle</button>
+  </div>
+  <div id="dirOut"></div>
+</section>
+
+<section id="spotsPanel" class="panel sheet" hidden>
+  <div class="row head"><b>Useful spots</b><button class="x" data-close="spotsPanel" aria-label="Close">×</button></div>
+  <div id="spotGrid"></div>
+  <div id="spotList"></div>
+</section>
+
+<section id="menuPanel" class="panel sheet" hidden>
+  <div class="row head"><b>IIT Bhubaneswar in 3D</b><button class="x" data-close="menuPanel" aria-label="Close">×</button></div>
+  <label class="toggle"><input type="checkbox" id="optLite"> Lighter mode (for slower phones)</label>
+  <label class="toggle"><input type="checkbox" id="optTrees" checked> Trees</label>
+  <label class="toggle"><input type="checkbox" id="optLabels" checked> Labels</label>
+  <div class="about">
+    <p><b>Tips:</b> tap any building or label for details. <kbd>/</kbd> or <kbd>Ctrl K</kbd> jumps to search, <kbd>Tab</kbd> on a result starts directions there, <kbd>Esc</kbd> closes panels. Double-tap to zoom.</p>
+    <p id="dataInfo"></p>
+    <p>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL); extra building outlines and places from <a href="https://overturemaps.org" target="_blank" rel="noopener">Overture Maps</a>; professors from the <a href="https://www.iitbbs.ac.in/index.php/faculty-members/" target="_blank" rel="noopener">IIT Bhubaneswar faculty directory</a>. 3D with <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a>.</p>
+    <p>A student project, not an official IIT Bhubaneswar map. Something wrong or missing? <a id="osmEdit" href="https://www.openstreetmap.org/edit#map=17/20.14797/85.67007" target="_blank" rel="noopener">Fix it on OpenStreetMap</a> (the map refreshes weekly) or <a href="https://github.com/Himsh1216/iitbbs-3d-map/issues" target="_blank" rel="noopener">open an issue</a>.</p>
+  </div>
+</section>
+
+<section id="navHud" hidden>
+  <div class="turn"><span id="navIcon">⬆</span><div><b id="navText"></b><small id="navSub"></small></div></div>
+  <div class="bar"><span id="navLeft"></span><button id="navStop">Stop</button></div>
+</section>
+
+<section id="walkHud" hidden>
+  <div class="walkhelp">Drag to look · <kbd>W A S D</kbd> or arrows to walk · <kbd>Shift</kbd> to run</div>
+  <button id="walkExit">Exit walk mode</button>
+  <div id="joy"><div id="joyKnob"></div></div>
+</section>
+
+<div id="attrib"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a> · <a href="https://overturemaps.org" target="_blank" rel="noopener">Overture</a></div>
+<div id="toast" role="status" hidden></div>
+
+<div id="loader">
+  <div class="ld">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="var(--accent)"/><g class="spin"><circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-width="2"/><path d="M16 7v18M7 16h18M9.6 9.6l12.8 12.8M22.4 9.6 9.6 22.4" stroke="#fff" stroke-width="1.6"/></g></svg>
+    <h1>IIT Bhubaneswar <em>in 3D</em></h1>
+    <p id="ldText">Loading the campus…</p>
+    <button id="ldRetry" hidden>Try again</button>
+  </div>
+</div>
+<noscript><p class="nojs">This 3D map needs JavaScript and WebGL.</p></noscript>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

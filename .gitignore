@@ -1,0 +1,9 @@
+# produced by scripts/build_data.py at deploy time
+data/osm.json
+data/extra-buildings.json
+data/places.json
+data/people.json
+data/meta.json
+__pycache__/
+node_modules/
+.DS_Store

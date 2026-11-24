@@ -1,0 +1,59 @@
+name: Build data and publish
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 21 * * 0' # Mondays 02:53 IST: pick up OpenStreetMap edits and faculty changes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install data tools
+        run: pip install overturemaps shapely
+
+      - name: Fetch campus data (OpenStreetMap, Overture, faculty directory)
+        timeout-minutes: 25
+        env:
+          PREV_SITE: https://himsh1216.github.io/iitbbs-3d-map/
+        run: python scripts/build_data.py --out data
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r index.html css js vendor data scripts _site/
+          if [ -f preview.jpg ]; then cp preview.jpg _site/; fi
+          ls -la _site/data
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
