@@ -282,25 +282,36 @@ def parse_room(page):
     return room
 
 
-def fetch_people():
+def fetch_people(budget=420):
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     page = http(FACULTY_URL, timeout=90).decode("utf-8", "replace")
     rows = parse_faculty_table(page)
     if len(rows) < 50:
         raise ValueError(f"only {len(rows)} faculty rows")
     log(f"  faculty rows: {len(rows)}")
-    found = 0
-    for i, row in enumerate(rows):
-        if not row.get("u"):
-            continue
+    t0, dead, done, found = time.time(), set(), 0, 0
+
+    def room_for(row):
+        host = urllib.parse.urlparse(row["u"]).netloc
+        if host in dead or time.time() - t0 > budget:
+            return row, None
         try:
-            room = parse_room(http(row["u"], timeout=45).decode("utf-8", "replace"))
+            return row, parse_room(http(row["u"], timeout=20).decode("utf-8", "replace"))
+        except Exception as e:  # noqa: BLE001
+            if "Name or service not known" in str(e):
+                dead.add(host)
+            return row, None
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for fut in as_completed([pool.submit(room_for, r) for r in rows if r.get("u")]):
+            row, room = fut.result()
+            done += 1
             if room:
                 row["o"] = room
                 found += 1
-        except Exception as e:  # noqa: BLE001
-            log(f"    profile {i} failed: {e}")
-        time.sleep(0.35)
-    log(f"  office rooms found: {found}")
+            if done % 40 == 0:
+                log(f"    profiles {done}, rooms {found}, {time.time() - t0:.0f}s")
+    log(f"  office rooms found: {found} of {len(rows)} ({time.time() - t0:.0f}s)")
     return {"src": FACULTY_URL, "fetched": datetime.date.today().isoformat(), "items": rows}
 
 

@@ -30,7 +30,8 @@ jobs:
         run: pip install overturemaps shapely
 
       - name: Fetch campus data (OpenStreetMap, Overture, faculty directory)
-        timeout-minutes: 25
+        timeout-minutes: 20
+        continue-on-error: true
         env:
           PREV_SITE: https://himsh1216.github.io/iitbbs-3d-map/
         run: python scripts/build_data.py --out data
