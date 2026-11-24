@@ -856,6 +856,7 @@ function loop(now) {
   if (!changed && !S.dirty) return;
   S.dirty = false;
   if (!S.walk) updateShadow();
+  camera.updateMatrixWorld(); // labels must use this frame's camera, not the last one
   world.sky.position.copy(camera.position);
   world.stars.position.copy(camera.position);
   const az = S.walk ? S.walk.yaw : getView().az;
