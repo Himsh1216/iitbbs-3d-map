@@ -339,11 +339,15 @@ export function buildCampus({ osm, extra = [], places = [], overrides = {}, peop
     const host = buildingAt(x, z);
     add({ id: 'n' + n.id, kind: 'poi', name: t.name ? (o.name || clean(t.name)) : SPOTS[s][0].replace(/ &.*/, ''), label: t.name ? (o.label || clean(t.name)) : '', short: o.short || '', full: '', aka: o.aka || [], cat: o.cat || classify(t, t.name), sub: '', tier: o.tier || (t.name ? 3 : 9), x, z, y: host ? host.h + 1 : 3, tags: t, spot: s, unnamed: !t.name, bid: host ? host.bid : undefined });
   }
+  const firstWord = (n) => (n || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ').find((w) => w.length >= 3 && !['the', 'iit', 'new'].includes(w)) || '';
   places.forEach((q, i) => {
     const [x, z] = project(q.lat, q.lon);
+    const name = (q.n || '').split(/\s+[|,]\s+/)[0].slice(0, 40);
+    const fw = firstWord(name);
+    if (fw && placesOut.some((p) => !p.unnamed && firstWord(p.name) === fw && Math.hypot(p.x - x, p.z - z) < 150)) return; // already on OSM
     const s = spotFromOverture(q.c || '', q.n || '');
     const host = buildingAt(x, z);
-    add({ id: 'o' + i, kind: 'poi', name: q.n, label: q.n, short: '', full: '', aka: [], cat: classify({ amenity: q.c }, q.n), sub: '', tier: 4, x, z, y: host ? host.h + 1 : 3, tags: { website: q.web }, spot: s, src: 'overture', bid: host ? host.bid : undefined });
+    add({ id: 'o' + i, kind: 'poi', name, label: name, short: '', full: q.n !== name ? q.n : '', aka: [], cat: classify({ amenity: q.c }, q.n), sub: '', tier: 4, x, z, y: host ? host.h + 1 : 3, tags: { website: q.web }, spot: s, src: 'overture', bid: host ? host.bid : undefined });
   });
 
   // faculty -> building

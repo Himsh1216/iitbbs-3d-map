@@ -33,7 +33,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .lbl.t3, .lbl.t4 { font-size: 11px; font-weight: 500; padding: 4px 8px 4px 6px; }
 .lbl.t3 i, .lbl.t4 i { width: 6px; height: 6px; }
 .lbl b { font-size: 14px; line-height: 1; }
-.lbl.spot { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.lbl.lbl-spot { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
 .lbl.sel { background: var(--accent); color: var(--accent-ink); }
 .lbl.endpt { background: #1f2a3a; color: #fff; font-weight: 800; }
 .lbl.endpt.b { background: var(--accent); }

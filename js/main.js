@@ -569,7 +569,7 @@ function openSpots(id) {
     return;
   }
   for (const p of list) {
-    const l = labels.add({ text: p.unnamed ? SPOTS[id][0].replace(/ &.*/, '') : p.label || p.name, tier: 0, x: p.x, y: (p.y || 2) + 2, z: p.z, cls: 'spot', icon: SPOTS[id][1], onClick: () => selectPlace(p) });
+    const l = labels.add({ text: p.unnamed ? SPOTS[id][0].replace(/ &.*/, '') : p.label || p.name, tier: 0, x: p.x, y: (p.y || 2) + 2, z: p.z, cls: 'lbl-spot', icon: SPOTS[id][1], onClick: () => selectPlace(p) });
     S.spotLabels.push(l);
   }
   $('#spotList').innerHTML = list.map((p, i) => `<button class="res" data-i="${i}"><span class="ri" style="background:#f1e6d8">${SPOTS[id][1]}</span><span><b>${esc(p.unnamed ? SPOTS[id][0] : p.name)}</b><small>${fmtDist(Math.hypot(p.x - ref.x, p.z - ref.z))} away${p.src === 'overture' ? ' · Overture' : ''}</small></span></button>`).join('');
