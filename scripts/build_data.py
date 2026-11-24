@@ -12,21 +12,26 @@ Every step is fail-soft: if a source is down, the copy already published on the
 live site is reused; if there is none, the file is skipped and the app copes.
 Run:  python3 scripts/build_data.py --out data
 """
-import argparse, datetime, html, json, math, os, re, subprocess, sys, tempfile, time
+import argparse, datetime, html, json, math, os, re, socket, subprocess, sys, tempfile, time
 import urllib.parse, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 UA = "iitbbs-3d-map data builder (+https://github.com/Himsh1216/iitbbs-3d-map)"
 OVERPASS = [
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
 ]
 # west, south, east, north of the area around campus
 BBOX = (85.6525, 20.1371, 85.6877, 20.1588)
 FACULTY_URL = "https://www.iitbbs.ac.in/index.php/faculty-members/"
 CAMPUS_WAY = 621537202
+
+
+# GitHub's runners have no IPv6 route: try IPv4 addresses first
+_getaddrinfo = socket.getaddrinfo
+socket.getaddrinfo = lambda *a, **k: sorted(_getaddrinfo(*a, **k), key=lambda r: r[0] != socket.AF_INET)
 
 
 def log(*a):
@@ -64,11 +69,14 @@ def previous(prev_site, name, dest):
 def fetch_osm():
     query = open(os.path.join(HERE, "campus.overpassql"), encoding="utf-8").read()
     body = urllib.parse.urlencode({"data": query}).encode()
-    for attempt in range(2):
+    deadline = time.time() + 540
+    for attempt in range(3):
         for url in OVERPASS:
+            if time.time() > deadline:
+                return None
             try:
                 log(f"  overpass: {url}")
-                raw = http(url, data=body, timeout=240)
+                raw = http(url, data=body, timeout=150)
                 data = json.loads(raw)
                 n = len(data.get("elements", []))
                 if n < 500:
@@ -78,7 +86,7 @@ def fetch_osm():
                 return data
             except Exception as e:  # noqa: BLE001
                 log(f"    failed: {e}")
-        time.sleep(20)
+        time.sleep(45)
     return None
 
 
