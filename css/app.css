@@ -41,11 +41,10 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 
 /* ---------- top bar ---------- */
 #top { position: fixed; left: 16px; top: 16px; width: 390px; max-width: calc(100vw - 32px); z-index: 5; display: flex; flex-direction: column; gap: 10px; }
-.brand { display: flex; align-items: center; gap: 10px; padding: 0 4px; text-shadow: 0 1px 2px rgba(255, 255, 255, .6); }
-body.dark .brand { text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
-.brand svg { width: 34px; height: 34px; stroke: none; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .18)); }
-.brand b { display: block; font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
-.brand span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
+.brand { display: flex; align-items: center; gap: 10px; width: fit-content; padding: 6px 14px 6px 7px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 2px 10px rgba(0, 0, 0, .12); }
+.brand svg { width: 30px; height: 30px; stroke: none; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .18)); }
+.brand b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.01em; }
+.brand span { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; }
 .searchbox { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 6px 0 14px; border-radius: var(--r); background: var(--glass);
   backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); box-shadow: var(--shadow); }
 .searchbox .ic { color: var(--muted); flex: none; }

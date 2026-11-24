@@ -34,7 +34,8 @@ jobs:
         continue-on-error: true
         env:
           PREV_SITE: https://himsh1216.github.io/iitbbs-3d-map/
-        run: python scripts/build_data.py --out data
+        # pushes reuse the published data (quick deploys); the weekly and manual runs fetch everything fresh
+        run: python scripts/build_data.py --out data ${{ github.event_name == 'push' && '--reuse' || '' }}
 
       - name: Assemble site
         run: |

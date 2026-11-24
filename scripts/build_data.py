@@ -329,11 +329,23 @@ def main():
     ap.add_argument("--out", default=os.path.join(HERE, "..", "data"))
     ap.add_argument("--prev-site", default=os.environ.get("PREV_SITE", ""))
     ap.add_argument("--skip", default="", help="comma list: osm,buildings,places,people")
+    ap.add_argument("--reuse", action="store_true", help="reuse files already on the live site (fast code-only deploys)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     skip = set(filter(None, a.skip.split(",")))
     meta = {"built": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="minutes")}
     p = lambda n: os.path.join(a.out, n)  # noqa: E731
+    files = {"osm": "osm.json", "buildings": "extra-buildings.json", "places": "places.json", "people": "people.json"}
+
+    if a.reuse and a.prev_site:
+        log("Reusing the data already published")
+        try:
+            meta.update({k: v for k, v in json.loads(http(a.prev_site.rstrip("/") + "/data/meta.json", timeout=60)).items() if k != "built"})
+        except Exception as e:  # noqa: BLE001
+            log(f"  no previous meta.json: {e}")
+        for key, name in files.items():
+            if key not in skip and previous(a.prev_site, name, p(name)):
+                skip.add(key)
 
     osm = None
     if "osm" not in skip:
@@ -343,8 +355,9 @@ def main():
             write_json(p("osm.json"), osm)
             meta["osm"] = {"fetched": meta["built"], "elements": len(osm["elements"])}
         elif previous(a.prev_site, "osm.json", p("osm.json")):
-            osm = json.load(open(p("osm.json"), encoding="utf-8"))
             meta["osm"] = {"reused": True}
+    if osm is None and os.path.exists(p("osm.json")):
+        osm = json.load(open(p("osm.json"), encoding="utf-8"))
 
     for name, fn, key in (("extra-buildings.json", extra_buildings, "buildings"),
                           ("places.json", extra_places, "places")):

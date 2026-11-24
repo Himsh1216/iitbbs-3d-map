@@ -384,7 +384,7 @@ function openDirections(from, to) {
   else if (!S.dir.from && S.gps && S.gps.inside) S.dir.from = ME;
   $('#fromIn').value = S.dir.from ? S.dir.from.name : '';
   $('#toIn').value = S.dir.to ? S.dir.to.name : '';
-  if (S.dir.from && S.dir.to) computeRoute();
+  if (S.dir.from && S.dir.to) { $('#endResults').hidden = true; document.activeElement?.blur?.(); computeRoute(); }
   else { $('#dirOut').innerHTML = '<p class="hint">Pick a start and an end. Start typing a building, hostel, short form (SBS, MHR) or professor.</p>'; (S.dir.from ? $('#toIn') : $('#fromIn')).focus(); }
 }
 function endItems(text, withMe) {
